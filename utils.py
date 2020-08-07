@@ -3,11 +3,10 @@ Helper functions to be used across the program. This file does not import any ot
 '''
 import os
 import glob
-from skimage import transform, util
-from skimage.transform import rotate, AffineTransform
 import torch
 import numpy as np
 import cv2
+import matplotlib.pyplot as plt
 
 ############################################################### GENERAL METHODS ###############################################################
 def get_device():
@@ -111,3 +110,29 @@ def calculate_accuracy(network_output, target):
     accuracy = (correct_pred*100/num_data)
 
     return accuracy
+
+def plot_graph(epochs, x_label, y_label, title, save_path, *args):
+    '''
+    Plots a graph using matplotlib using the given parameters and saves the graph at the given path.
+    *args has to be a list containing N number of value list, N number of colour and N number of label name.
+    '''
+    plt.clf() #cleares any existing graph
+    x_axis = [i for i in range(epochs)]
+
+    for arg in args:
+        plt.plot(x_axis, arg[0], arg[1], label=arg[2])
+
+    plt.title(str(title))
+    plt.ylabel(str(y_label))
+    plt.xlabel(str(x_label))
+    plt.legend()
+    plt.savefig(save_path)
+
+def evaluate_class(net_output, classes_list):
+    '''
+    Given the prediction tensor and the list of classes, returns the predicted class.
+    '''
+    predicted_index = torch.argmax(net_output, dim=1)
+    predicted_class = classes_list[predicted_index[0]]
+
+    return predicted_class

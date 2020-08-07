@@ -3,8 +3,6 @@ PyTorch implementation of VGG-16 architecture.
 '''
 import torch
 import torch.nn as nn
-from torch.optim import Adam, lr_scheduler
-import cfg
 
 class Model(nn.Module):
     '''
@@ -32,7 +30,7 @@ class Model(nn.Module):
 
 
 
-    def __init__(self, resized_img_size=cfg.RESIZED_IMAGE_SIZE, num_classes=cfg.NUM_CLASSES, init_weights=True):
+    def __init__(self, resized_img_size, num_classes, init_weights=True):
         '''
         Architecture initialization.
         '''
@@ -40,18 +38,18 @@ class Model(nn.Module):
 
         #convolutional layer configuration for VGG-16 network.
         #the values stands for the number of output filters in every layer of CNN while 'M' stands for Max-Pool layer.
-        self.cfgs = {
+        self.net_cfg = {
             'conv':[64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
             'fc':[512, 512, num_classes] #not recommended to have number of classes as the output channel size except the last layer.
         }
 
         conv_layers = []
         in_channels = 3 #the first input channel.
-        num_pools = self.cfgs['conv'].count('M') #get the number of pooling layers used.
+        num_pools = self.net_cfg['conv'].count('M') #get the number of pooling layers used.
 
 
         #appends every convolutional layer in a list.
-        for item in self.cfgs['conv']:
+        for item in self.net_cfg['conv']:
 
             if item == 'M':
                 conv_layers += [nn.MaxPool2d(kernel_size=2, stride=2)] #maxpool layer
@@ -68,19 +66,19 @@ class Model(nn.Module):
 
         #we want to find the last output channel size of the convolutional layers.
         index = -1 #start from the final index
-        while isinstance(self.cfgs['conv'][index], str): #repeats until the final index points to an integer value rather than a string.
+        while isinstance(self.net_cfg['conv'][index], str): #repeats until the final index points to an integer value rather than a string.
             index -= 1
 
         #when the last convolutional layer's output is flattened, the number of total input is defined by
         #(Last output channel num of the conv layer) x (pooled image size) x (pooled image size)
         #pooled image size can be calculated using the original image size divided by 2 raised to the power of (num of maxpools used)
         #NOTE that all these are assuming that the maxpools are of stride 2 and every convolutional layers are using zero-padding.
-        fc_input_channel = self.cfgs['conv'][index] * (resized_img_size//(2**num_pools)) * (resized_img_size//(2**num_pools))
+        fc_input_channel = self.net_cfg['conv'][index] * (resized_img_size//(2**num_pools)) * (resized_img_size//(2**num_pools))
 
         fc_layers = []
 
         #appends every fully-connected layers into the list. IF THERE ARE LAYERS WITH OUTPUT CHANNEL SIZE THE SAME AS NUM OF CLASS OTHER THAN THE FINAL LAYER, THE IF-ELSE LOGIC BELOW HAS TO BE MODIFIED!
-        for item in self.cfgs['fc']:
+        for item in self.net_cfg['fc']:
 
             fully_connected_layer = nn.Linear(fc_input_channel, item)
 
@@ -99,13 +97,13 @@ class Model(nn.Module):
         if init_weights:
             self.init_weights()
 
-    def forward(self, input_x):
+    def forward(self, x):
         '''
         Forward-propagation.
         '''
 
-        hidden_x = self.features(input_x) #convolutional layers
-        # hidden_x = self.avgpool(hidden_x) #avgpool layer
+        hidden_x = self.features(x) #convolutional layers
+        hidden_x = self.avgpool(hidden_x) #avgpool layer
         hidden_x = torch.flatten(hidden_x, 1) #flatten the output of conv layers.
 
         output = self.classifier(hidden_x) #fully-connected layers
@@ -113,12 +111,4 @@ class Model(nn.Module):
         return output
 
 
-#initialize the model
-VGG = Model()
 
-
-OPTIMIZER = Adam(VGG.parameters(), lr=cfg.LEARNING_RATE) #optimizer
-LR_DECAY = lr_scheduler.ExponentialLR(OPTIMIZER, gamma=cfg.LR_DECAY_RATE) #scheduler is used to lower the learning rate during training later.
-LOSS_CRITERION = nn.CrossEntropyLoss() #loss function.
-
-VGG = VGG.to(cfg.DEVICE) #move the network to GPU if available.
