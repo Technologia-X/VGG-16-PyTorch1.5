@@ -3,6 +3,7 @@ PyTorch implementation of VGG-16 architecture.
 '''
 import torch
 import torch.nn as nn
+from torch.optim import Adam, lr_scheduler
 import cfg
 
 class Model(nn.Module):
@@ -41,7 +42,7 @@ class Model(nn.Module):
         #the values stands for the number of output filters in every layer of CNN while 'M' stands for Max-Pool layer.
         self.cfgs = {
             'conv':[64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-            'fc':[2048, 2048, num_classes] #not recommended to have number of classes as the output channel size except the last layer.
+            'fc':[1024, 1024, num_classes] #not recommended to have number of classes as the output channel size except the last layer.
         }
 
         conv_layers = []
@@ -108,4 +109,13 @@ class Model(nn.Module):
 
         return output
 
+
+#initialize the model
 VGG = Model()
+
+
+OPTIMIZER = Adam(VGG.parameters(), lr=cfg.LEARNING_RATE) #optimizer
+LR_DECAY = lr_scheduler.ExponentialLR(OPTIMIZER, gamma=cfg.LR_DECAY_RATE) #scheduler is used to lower the learning rate during training later.
+LOSS_CRITERION = nn.CrossEntropyLoss() #loss function.
+
+VGG = VGG.to(cfg.DEVICE) #move the network to GPU if available.

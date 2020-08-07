@@ -1,30 +1,49 @@
 '''
 Helper functions to be used across the program. This file does not import any other files as modules!
 '''
-
+import os
 import glob
 from skimage import transform, util
-from skimage.transform import rotate, AffineTransform, rescale
+from skimage.transform import rotate, AffineTransform
+import torch
 import numpy as np
 import cv2
 
 ############################################################### GENERAL METHODS ###############################################################
+def get_device():
+    '''
+    Checks if GPU is available to be used. If not, CPU is used.
+    '''
+    return torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+def check_file_exist(file_path, file_name):
+    '''
+    Checks if a file exists at the given path.
+    '''
+    if os.path.isfile(file_path + file_name):
+        return True
+
+    return False
+
+def create_dir(dir_path):
+    '''
+    Creates a directory at the given path if the directory does not exist.
+    '''
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+
 
 def read_image(image_path, resized_image_size):
     '''
-    Reads, resize, and normalize a single image from the given path and returns the numpy array of the image.
+    Reads and resize  a single image from the given path and returns the image in NumPy array.
     '''
+    im_ = cv2.imread(image_path) #read image from path
+    im_ = cv2.resize(im_, (resized_image_size, resized_image_size)) #resize image
 
-    im_ = cv2.imread(image_path)
-    im_ = cv2.cvtColor(im_, cv2.COLOR_BGR2RGB)
-    im_ = cv2.resize(im_, (resized_image_size, resized_image_size))
-    im_ = im_/255 #normalize image
-
-    return np.asarray(im_, dtype=np.float32)
+    return im_
 
 
-
-############################################################### DATA RELATED METHODS ###############################################################
+############################################################### DATA PRE-PROCESSING METHODS ###############################################################
 def get_classes(dataset_folder_path):
     '''
     Returns a list of class names (lowercased) from the dataset folder and the total number of classes.
@@ -77,42 +96,16 @@ def generate_training_data(data, resized_image_size):
     return image_array, label
 
 
-############################################################### IMAGE AUGMENTATION METHODS ###############################################################
-def image_rotations(image, rotation_angles):
-    '''
-    Returns the rotated versions of the given image.
-    '''
-    rotated_images = [rotate(image, angle=x) for x in rotation_angles] #each rotated image will be stored in the list.
-    return np.asarray(rotated_images, dtype=np.float32)
+############################################################### DATA POST-PROCESSING METHODS ###############################################################
 
-def image_shearing(image, shear_values):
+def calculate_accuracy(network_output, target):
     '''
-    Returns the sheared versions of the given image.
+    Calculates the overall accuracy of the network.
     '''
-    shearings = [AffineTransform(shear=x) for x in shear_values] #shearing objects
+    num_data = target.size()[0] #num of data
+    network_output = torch.argmax(network_output, dim=1)
+    correct_pred = torch.sum(network_output == target)
 
-    #shear the image for every shear objects
-    sheared_images = [transform.warp(image, shearings[i], order=1, preserve_range=True, mode='wrap') for i in range(len(shear_values))]
+    accuracy = (correct_pred*100/num_data)
 
-    return np.asarray(sheared_images, dtype=np.float32)
-
-def image_flipping(image, flip_modes):
-    '''
-    Returns the flipped versions of the given image.
-    '''
-    flipped_images = []
-    if 'ud' in flip_modes:
-        flipped_images.append(np.flipud(image)) #flip the image up-down
-
-    if 'lr' in flip_modes:
-        flipped_images.append(np.fliplr(image)) #flip the image left-right
-
-    return np.asarray(flipped_images, dtype=np.float32)
-
-def image_noising(image, noise_modes):
-    '''
-    Returns the noisy version of the given image.
-    '''
-    noisy_images = [util.random_noise(image, mode=x) for x in noise_modes] #adds random noise to the original image based on the given mode(s).
-
-    return np.asarray(noisy_images, dtype=np.float32)
+    return accuracy
