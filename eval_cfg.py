@@ -3,19 +3,20 @@ Configuration file for model evaluation.
 '''
 import os
 from utils import get_device, check_file_exist
+from main_cfg import ARGS
 
 CURR_FILE_PATH = '/'.join(os.path.realpath(__file__).split('/')[:-1]) #the absolute path of this file.
 DEVICE = get_device() #identify the device to be used for training/evaluation
-MODEL_PATH = CURR_FILE_PATH +'/torch_model/' #trained model save path.
-MODEL_NAME = 'vgg16-torch.pth'
+MODEL_PATH = CURR_FILE_PATH + ARGS.model_path #trained model save path.
+MODEL_NAME = ARGS.model_name
 
 #checks if the torch model exists.
 TRAINED_MODEL_PRESENCE = check_file_exist(file_path=MODEL_PATH, file_name=MODEL_NAME)
 
 
-RESIZED_IMAGE_SIZE = 224
+RESIZED_IMAGE_SIZE = ARGS.image_size
 
-CLASS_FILE = './names.txt'
+CLASS_FILE = ARGS.class_file
 CLASSES = []
 
 #Get the classes name from the .txt file.
