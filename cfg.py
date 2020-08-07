@@ -20,7 +20,7 @@ TRAINED_MODEL_PRESENCE = check_file_exist(file_path=MODEL_PATH, file_name=MODEL_
 
 ####################################################### IMAGE CONFIGURATIONS #######################################################
 
-RESIZED_IMAGE_SIZE = 446
+RESIZED_IMAGE_SIZE = 224
 
 #IMAGE AUGMENTATION CONFIGURATIONS
 
@@ -48,7 +48,7 @@ DATA_SHUFFLE = True
 
 ####################################################### TRAINING CONFIGURATIONS #######################################################
 
-BATCH_SIZE = 7
+BATCH_SIZE = 5
 EPOCH = 1000
 LEARNING_RATE = 1e-4
 LR_DECAY_RATE = 0.99

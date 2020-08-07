@@ -6,6 +6,7 @@ import random
 from skimage import transform, util
 from skimage.transform import rotate, AffineTransform
 import torch
+import numpy as np
 
 
 class RandomRotate:
@@ -34,14 +35,17 @@ class RandomRotate:
         '''
         Intialize parameters. Rotation angle cannot be initialized here as it'll be only initialized once for every batch thus making all the images in a batch to be rotated at the same angle.
         '''
+        assert isinstance(angle_range, (int, list, tuple)), "angle_range must be either tuple, list or float!"
         assert 0 <= prob <= 1, "The probability has to be a number from 0 to 1."
         self.angle_range = angle_range
-        self.prob_list = [1]*prob*100 + [0]*((1-prob)*100) #list of 1's and 0's. e.g. [1,1,...,0,0,0]
+        prob_percentage = int(prob*100)
+        self.prob_list = [1]*prob_percentage + [0]*(100-prob_percentage) #list of 1's and 0's. e.g. [1,1,...,0,0,0]
 
     def __call__(self, sample):
         '''
         Rotates the input image using the generated rotation angle if the probability is 1.
         '''
+
         if random.choice(self.prob_list) == 0:
             return sample
 
@@ -61,13 +65,13 @@ class RandomShear:
         Generates a random value for shearing.
         '''
          #check if the shear_range is either one of the listed types.
-        assert isinstance(shear_range, (float, list, tuple)), "angle_range must be either tuple, list or float!"
+        assert isinstance(shear_range, (float, list, tuple)), "shear_range must be either tuple, list or float!"
 
         shear_value = 0
-        if isinstance(shear_range, int):
-            shear_value = random.randrange(0, shear_range) if shear_range > 0 else random.randrange(shear_range, 0)
+        if isinstance(shear_range, (float)):
+            shear_value = round(random.uniform(0, shear_range), 1) if shear_range > 0 else round(random.uniform(shear_range, 0), 1)
         else:
-            shear_value = random.randrange(shear_range[0], shear_range[1]) if shear_range[0] < shear_range[1] else random.randrange(shear_range[1], shear_range[0])
+            shear_value = round(random.uniform(shear_range[0], shear_range[1]), 1) if shear_range[0] < shear_range[1] else round(random.uniform(shear_range[1], shear_range[0]), 1)
 
         return shear_value
 
@@ -78,7 +82,8 @@ class RandomShear:
         '''
         assert 0 <= prob <= 1, "The probability has to be a number from 0 to 1."
         self.shear_range = shear_range
-        self.prob_list = [1]*prob*100 + [0]*((1-prob)*100) #list of 1's and 0's. e.g. [1,1,...,0,0,0]
+        prob_percentage = int(prob*100)
+        self.prob_list = [1]*prob_percentage + [0]*(100-prob_percentage) #list of 1's and 0's. e.g. [1,1,...,0,0,0]
 
     def __call__(self, sample):
         '''
@@ -105,7 +110,8 @@ class RandomHorizontalFlip:
         Initiliaze parameters.
         '''
         assert 0 <= prob <= 1, "The probability has to be a number from 0 to 1."
-        self.prob_list = [1]*prob*100 + [0]*((1-prob)*100)
+        prob_percentage = int(prob*100)
+        self.prob_list = [1]*prob_percentage + [0]*(100-prob_percentage) #list of 1's and 0's. e.g. [1,1,...,0,0,0]
 
     def __call__(self, sample):
         '''
@@ -130,7 +136,8 @@ class RandomVerticalFlip:
         Initiliaze parameters.
         '''
         assert 0 <= prob <= 1, "The probability has to be a number from 0 to 1."
-        self.prob_list = [1]*prob*100 + [0]*((1-prob)*100)
+        prob_percentage = int(prob*100)
+        self.prob_list = [1]*prob_percentage + [0]*(100-prob_percentage) #list of 1's and 0's. e.g. [1,1,...,0,0,0]
 
     def __call__(self, sample):
         '''
@@ -159,7 +166,8 @@ class RandomNoise:
         assert isinstance(mode, (str, list)), "Noise mode has to either be a string or a list!"
 
         #creates a list of 1's and 0's. There will be exactly "probs" num of 1's and "100 - probs" num of 0's.
-        self.prob_list = [1]*prob + [0]*(100-prob)
+        prob_percentage = int(prob*100)
+        self.prob_list = [1]*prob_percentage + [0]*(100-prob_percentage) #list of 1's and 0's. e.g. [1,1,...,0,0,0]
         self.mode = mode #mode of noise
 
     def __call__(self, sample):
@@ -198,8 +206,7 @@ class ToTensor:
 
         if self.mode == 'training':
 
-            return {'image': torch.from_numpy(sample['image']),
-                    'label': torch.from_numpy(sample['label'])}
-        else:
+            return {'image': torch.from_numpy(sample['image'].copy()).type(torch.FloatTensor),
+                    'label': torch.from_numpy(np.asarray(sample['label'], dtype='int32')).type(torch.LongTensor)}
 
-            return {'image': torch.from_numpy(sample['image'])}
+        return {'image': torch.from_numpy(sample['image'].copy())}

@@ -39,8 +39,10 @@ def read_image(image_path, resized_image_size):
     '''
     im_ = cv2.imread(image_path) #read image from path
     im_ = cv2.resize(im_, (resized_image_size, resized_image_size)) #resize image
+    im_ = im_/255
 
-    return im_
+    img = np.asarray(im_, dtype=np.float32)
+    return img
 
 
 ############################################################### DATA PRE-PROCESSING METHODS ###############################################################

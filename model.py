@@ -42,11 +42,13 @@ class Model(nn.Module):
         #the values stands for the number of output filters in every layer of CNN while 'M' stands for Max-Pool layer.
         self.cfgs = {
             'conv':[64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-            'fc':[1024, 1024, num_classes] #not recommended to have number of classes as the output channel size except the last layer.
+            'fc':[512, 512, num_classes] #not recommended to have number of classes as the output channel size except the last layer.
         }
 
         conv_layers = []
         in_channels = 3 #the first input channel.
+        num_pools = self.cfgs['conv'].count('M') #get the number of pooling layers used.
+
 
         #appends every convolutional layer in a list.
         for item in self.cfgs['conv']:
@@ -59,22 +61,21 @@ class Model(nn.Module):
                 conv_layers += [conv2d, nn.BatchNorm2d(num_features=item), nn.ReLU(inplace=True)]
                 in_channels = item #updates the input channel with the last output channel.
 
+
         #build convolutional layers of VGG-16 from the list.
         self.features = nn.Sequential(*conv_layers) #unpacks every layer from the list and place them in a sequence.
-        self.avgpool = nn.AdaptiveAvgPool2d((7, 7))
+        self.avgpool = nn.AdaptiveAvgPool2d((resized_img_size//(2**num_pools), resized_img_size//(2**num_pools)))
 
         #we want to find the last output channel size of the convolutional layers.
         index = -1 #start from the final index
         while isinstance(self.cfgs['conv'][index], str): #repeats until the final index points to an integer value rather than a string.
             index -= 1
 
-        num_pools = conv_layers.count('M') #get the number of pooling layers used.
-
         #when the last convolutional layer's output is flattened, the number of total input is defined by
         #(Last output channel num of the conv layer) x (pooled image size) x (pooled image size)
         #pooled image size can be calculated using the original image size divided by 2 raised to the power of (num of maxpools used)
         #NOTE that all these are assuming that the maxpools are of stride 2 and every convolutional layers are using zero-padding.
-        fc_input_channel = self.cfgs['conv'][index] * 2 * resized_img_size//2**num_pools
+        fc_input_channel = self.cfgs['conv'][index] * (resized_img_size//(2**num_pools)) * (resized_img_size//(2**num_pools))
 
         fc_layers = []
 
@@ -102,9 +103,11 @@ class Model(nn.Module):
         '''
         Forward-propagation.
         '''
+
         hidden_x = self.features(input_x) #convolutional layers
-        hidden_x = self.avgpool(hidden_x) #avgpool layer
+        # hidden_x = self.avgpool(hidden_x) #avgpool layer
         hidden_x = torch.flatten(hidden_x, 1) #flatten the output of conv layers.
+
         output = self.classifier(hidden_x) #fully-connected layers
 
         return output

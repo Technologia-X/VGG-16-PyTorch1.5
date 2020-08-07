@@ -47,11 +47,11 @@ class LoadDataset(Dataset):
         }
 
         if self.transform:
-            sample['image'] = self.transform(sample['image'])
+            sample = self.transform(sample)
 
         return sample
 
-
+#Initialize the training data class.
 TRAINING_DATA = LoadDataset(resized_image_size=cfg.RESIZED_IMAGE_SIZE, total_images=cfg.TOTAL_DATA, classes=cfg.CLASSES,
                             data_list=cfg.IMG_LABEL_LIST, transform=transforms.Compose([RandomRotate(angle_range=cfg.ROTATION_RANGE, prob=cfg.ROTATION_PROB),
                                                                                         RandomShear(shear_range=cfg.SHEAR_RANGE, prob=cfg.SHEAR_PROB),
