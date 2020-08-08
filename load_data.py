@@ -3,7 +3,6 @@ Loads the given dataset using PyTorch Dataset module to be used with PyTorch's D
 '''
 import torch
 from torch.utils.data import Dataset
-import train_cfg as t_cfg
 from utils import generate_training_data
 
 
@@ -12,8 +11,7 @@ class LoadDataset(Dataset):
     Contains overwritten methods from Torch's Dataset class.
     '''
 
-    def __init__(self, resized_image_size=t_cfg.RESIZED_IMAGE_SIZE, total_images=t_cfg.TOTAL_DATA, classes=t_cfg.CLASSES, data_list=t_cfg.IMG_LABEL_LIST,
-                 transform=None):
+    def __init__(self, resized_image_size, total_images, classes, data_list, transform=None):
         '''
         Initiliaze dataset related parameters.
         '''
@@ -48,6 +46,3 @@ class LoadDataset(Dataset):
             sample = self.transform(sample)
 
         return sample
-
-
-
